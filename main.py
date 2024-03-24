@@ -74,6 +74,7 @@ class ChimeraWindow(Gtk.Window):
 
     def run_update_check(self):
         """Actually check for updates and account for errors."""
+        print(self.package_manager.check_updates)
         update_process = self.package_manager.check_updates()
         if update_process.returncode != 0:
             GLib.idle_add(self.show_error, "Unable to check for updates")
@@ -133,13 +134,17 @@ class PackageManager:
         """Upgrade packages"""
         return self.run_command(self.upgrade_cmd)
 
-    def run_command(self, cmd):
-        """Actually run the command"""
-        try:
-            return s.run(cmd, shell=True, capture_output=True, text=True)
-        except Exception as e:
-            logging.error(str(e))
-            raise Exception(f"Failed to run command: {cmd}.")
+
+def run_command(self, cmd):
+    """Actually run the command"""
+    try:
+        result = s.run(cmd, shell=True, capture_output=True, text=True)
+        if result.stderr:
+            logging.error(f"Command error output: {result.stderr}")
+        return result
+    except Exception as e:
+        logging.error(str(e))
+        raise Exception(f"Failed to run command: {cmd}.")
 
 
 class AptManager(PackageManager):
