@@ -176,7 +176,7 @@ class PacmanManager(PackageManager):
 
     def __init__(self):
         super().__init__()
-        self.count_updates_cmd = "pacman sy && pacman -Qu | wc -l"
+        self.count_updates_cmd = "pacman Sy && pacman -Qu | wc -l"
         self.check_updates_cmd = "pacman -Qu"
         self.upgrade_cmd = "pacman -Syu"
 
