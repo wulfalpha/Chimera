@@ -114,6 +114,18 @@ class ChimeraWindow(Gtk.Window):
         self.spinner.stop()
 
 
+def run_command(cmd):
+    """Actually run the command"""
+    try:
+        result = s.run(cmd, shell=True, capture_output=True, text=True)
+        if result.stderr:
+            logging.error(f"Command error output: {result.stderr}")
+        return result
+    except Exception as e:
+        logging.error(str(e))
+        raise Exception(f"Failed to run command: {cmd}.")
+
+
 class PackageManager:
     """Package manager class"""
 
@@ -124,27 +136,15 @@ class PackageManager:
 
     def check_updates(self):
         """how the package manager checks for updates"""
-        return self.run_command(self.check_updates_cmd)
+        return run_command(self.check_updates_cmd)
 
     def count_updates(self):
         """Return number of updates."""
-        return self.run_command(self.count_updates_cmd)
+        return run_command(self.count_updates_cmd)
 
     def upgrade(self):
         """Upgrade packages"""
-        return self.run_command(self.upgrade_cmd)
-
-
-def run_command(self, cmd):
-    """Actually run the command"""
-    try:
-        result = s.run(cmd, shell=True, capture_output=True, text=True)
-        if result.stderr:
-            logging.error(f"Command error output: {result.stderr}")
-        return result
-    except Exception as e:
-        logging.error(str(e))
-        raise Exception(f"Failed to run command: {cmd}.")
+        return run_command(self.upgrade_cmd)
 
 
 class AptManager(PackageManager):
