@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import logging
-import subprocess as s
+import subprocess as process
 
 import gi
 
@@ -54,10 +54,13 @@ class ChimeraWindow(Gtk.Window):
         """Display results of update procedure."""
         if updates == 0:
             update_msg = "Your system is up-to-date."
+            self.send_notification("Chimera Update", "Your system is up-to-date.", False)
         elif updates == 1:
             update_msg = "There is one update available."
+            self.send_notification("Chimera Update", "There is one update available.", False)
         else:
             update_msg = f"There are {updates} updates available."
+            self.send_notification("Chimera Update", f"There are {updates} updates available.", False)
         self.label1.set_text(f"Updates: {update_msg}")
         self.button_upgrade.set_sensitive(updates > 0)
         self.spinner.stop()
@@ -73,25 +76,25 @@ class ChimeraWindow(Gtk.Window):
         threading.Thread(target=self.run_update_check).start()
 
     def run_update_check(self):
-        """Actually check for updates and account for errors."""
+        """Actually check for updates and account for error process."""
         print(self.package_manager.check_updates())
         update_process = self.package_manager.check_updates()
         if update_process.returncode != 0:
             GLib.idle_add(self.show_error, "Unable to check for updates")
             return
 
-        updates = update_process.stdout.decode("utf-8").strip()
+        updates = update_process.stdout.strip()
         try:
             updates = int(updates)
         except ValueError:
             GLib.idle_add(self.show_error, "Unable to parse update count")
-            return
-
+        return
         GLib.idle_add(self.update_results, updates)
 
     def show_error(self, message):
         """Pass errors on to the user"""
         self.label1.set_text(f"Error: {message}")
+        self.send_notification("Chimera Update Error", message, True)
         self.spinner.stop()
 
     def on_button_upgrade_clicked(self, widget):
@@ -111,13 +114,24 @@ class ChimeraWindow(Gtk.Window):
     def update_after_upgrade(self):
         """Reset label after update."""
         self.label1.set_text("Updates: Update Complete!")
+        self.send_notification("Chimera Update", "Update complete! Your system is up-to-date.", False)
         self.spinner.stop()
+        
+    def send_notification(self, title, message, urgent):
+        try:
+            if urgent:
+                process.run(["notify-send", title, message, "-u", "critical"])
+            else:
+                process.run(["notify-send", title, message])
+        except Exception as e:
+            logging.error(str(e))
+            raise Exception(f"Failed to run command: {cmd}")
 
 
 def run_command(cmd):
     """Actually run the command"""
     try:
-        result = s.run(cmd, shell=True, capture_output=True, text=True)
+        result =  process.run(cmd, shell=True, capture_output=True, text=True)
         print(result)
         if result.stderr:
             logging.error(f"Command error output: {result.stderr}")
@@ -140,7 +154,7 @@ class PackageManager:
         return run_command(self.check_updates_cmd)
 
     def count_updates(self):
-        """Return number of updates."""
+        """Return number of update process."""
         return run_command(self.count_updates_cmd)
 
     def upgrade(self):
@@ -178,11 +192,11 @@ class DnfManager(PackageManager):
 
 
 class PacmanManager(PackageManager):
-    """Support for Pacman. Note aur helpers not included deliberately to avoid causing issues."""
+    """Support for Pacman. Note aur helpers not included deliberately to avoid causing issue process."""
 
     def __init__(self):
         super().__init__()
-        self.count_updates_cmd = "pacman Sy && pacman -Qu | wc -l"
+        self.count_updates_cmd = "pacman -Qu | wc -l"
         self.check_updates_cmd = "pacman -Qu"
         self.upgrade_cmd = "pacman -Syu"
 
@@ -217,8 +231,8 @@ class DistroCheck:
             raise
 
     def get_package_manager_for_distro(self):
-        """Select Package manager and account for errors."""
-        options = self.package_managers.get(self.distro_id)
+        """Select Package manager and account for error process."""
+        options = self.package_manager process.get(self.distro_id)
         if options is None:
             raise Exception(
                 f"No supported package manager found for distro: {self.distro_id}"
@@ -233,7 +247,7 @@ class DistroCheck:
 
     def is_tool_available(self, name):
         """Check for available package manager."""
-        return s.call(["which", name], stdout=s.DEVNULL, stderr=s.DEVNULL) == 0
+        return  process.call(["which", name], stdout= process.DEVNULL, stderr= process.DEVNULL) == 0
 
 
 class ErrorDialog(Gtk.Dialog):
@@ -251,7 +265,6 @@ class ErrorDialog(Gtk.Dialog):
         box = self.get_content_area()
         box.add(label)
         self.show_all()
-
 
 try:
     distro_check = DistroCheck()
